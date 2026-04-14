@@ -91,6 +91,7 @@ html.dark footer{border-top-color:var(--border)}
     <a href="/lcs/kmb/presentation.html">Deck</a>
     <a href="/lcs/kmb/model.html">Model</a>
     <a href="/lcs/kmb/consensus.html" class="active">Consensus</a>
+    <a href="/lcs/kmb/questions.html">Questions</a>
   </div>
   <div class="nav-right">
     <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode">&#9790;</button>

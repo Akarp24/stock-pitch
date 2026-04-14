@@ -83,6 +83,7 @@ table.slide-tbl tr.total td{font-weight:800;color:var(--gold);background:rgba(18
     <a href="/lcs/bx/presentation.html" class="active">Deck</a>
     <a href="/lcs/bx/model.html">Model</a>
     <a href="/lcs/bx/consensus.html">Consensus</a>
+    <a href="/lcs/bx/questions.html">Questions</a>
   </div>
   <span class="slide-counter" id="counter">01 / 14</span>
 </div>

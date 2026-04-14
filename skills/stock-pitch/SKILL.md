@@ -72,6 +72,13 @@ Every data point must carry one of these source tags:
 | Specific URL (IR page, letter) | Targeted content to incorporate |
 | Merger/M&A context | Triggers accretion/dilution workflow |
 
+## v1.1 Capabilities (Added April 2026)
+
+- **Page 6: Questions for Management** — diligence toolkit with 20 probe questions organized by category. Each question has rationale and red-flag answer markers. See `examples/bx/bx-questions.ts` and `examples/kmb/kmb-questions.ts`.
+- **Probability-weighted scenarios** — interactive model now includes a probability panel where users assign weights to Bull/Base/Street/Bear and get an expected-value PT. See `examples/bx/bx-model.ts`.
+- **URL-encoded scenario sharing** — Share button on model pages encodes slider state to URL hash. Recipients open the exact scenario. See "Phase 3.5" below.
+- **PDF export** — print-optimized CSS on memo, questions, and model pages. One-click distribution.
+
 ## Execution Workflow
 
 ### Phase 1: Autonomous Data Collection
@@ -222,7 +229,7 @@ Using ALL collected data, form a proprietary thesis:
 - Cross-check: Peer-relative valuation from Phase 2B
 - If sell-side provided: Compare to consensus PT and explain differences
 
-### Phase 3: Build 5 HTML Pages
+### Phase 3: Build 6 HTML Pages
 
 Read `references/page-structures.md` and `references/design-system.md` before
 building. Each page uses:
@@ -303,6 +310,48 @@ Core features across all sector templates:
 - Data source footnotes after every data table
 - Master Data Sources disclaimer before footer
 
+#### Page 6: Questions for Management
+
+A diligence toolkit with 20 hand-crafted probe questions for buy-side meetings, conference Q&A, and expert network calls. This transforms the portal from a passive research artifact into an active diligence tool.
+
+Structure:
+- Hero with expand/collapse/print action buttons
+- 4-5 question categories (varies by sector — Strategy / Capital Allocation / Competitive / Risk / Variant Perception is the default set)
+- For M&A situations: Deal Execution / Synergy Capture / Litigation / Strategy / Variant Perception
+- For alt asset managers: Platform / Capital Allocation / Competitive / Risk / Variant Perception
+- Each question:
+  - Numbered with priority tag (High / Medium / Standard)
+  - Click-to-expand detail
+  - "Why We're Asking" — rationale tied to the memo thesis
+  - "Red-Flag Answer" — what a non-answer sounds like
+- Print-optimized CSS — all questions expand on print for physical prep
+
+Build pattern: see `references/page-structures.md` section "Page 6: Questions" and `examples/bx/bx-questions.ts` or `examples/kmb/kmb-questions.ts` for reference implementations.
+
+**Navigation:** add `<a href="/lcs/{ticker}/questions.html">Questions</a>` to every other page's nav.
+
+### Phase 3.5: Interactive Model Enhancements (v1.1+)
+
+The interactive model page should include these features beyond the core slider architecture:
+
+**Probability-Weighted Expected Value Panel**
+- 4 probability sliders (Bull / Base / Street / Bear)
+- Sum indicator (green when 100%, red otherwise)
+- Table showing each scenario's fair value, return, and weighted PT contribution
+- Expected Value row = Σ(probability × fair value)
+- Uses the respective PRESET for each scenario's assumptions
+
+**URL-Encoded Scenario Sharing**
+- "Share This Scenario" button in hero
+- Encodes all slider + probability state to a base64 JSON URL hash
+- On page load: if `location.hash` present, decode and apply to sliders
+- Copy-to-clipboard with visible confirmation toast
+
+**PDF Export**
+- "Export PDF" button triggers `window.print()`
+- Print CSS hides nav, sidebar controls, and interactive elements
+- Memo, questions, and model pages all support this
+
 ### Phase 4: Wire Routing & Deploy
 
 See `references/deployment.md` for the full Cloudflare Worker setup.
@@ -315,7 +364,7 @@ Summary:
 ### Phase 5: Verify
 
 ```bash
-for page in "" "memo.html" "presentation.html" "model.html" "consensus.html"; do
+for page in "" "memo.html" "presentation.html" "model.html" "consensus.html" "questions.html"; do
   curl -s -o /dev/null -w "%{http_code}" "https://{DOMAIN}/lcs/{ticker}/${page}"
 done
 ```

@@ -10,15 +10,16 @@ Built by [Levin Capital Strategies](https://github.com/eratner15) for Claude Cod
 
 ## What You Get
 
-Each portal contains five interconnected pages at `/{basepath}/{ticker}/`:
+Each portal contains six interconnected pages at `/{basepath}/{ticker}/`:
 
 | Page | Purpose |
 |------|---------|
 | **Index** | Landing page — dual price targets, 7-metric bar, 3 thesis pillars, earnings setup |
-| **Memo** | 3,000-word SCQA investment memo with 8+ sidenotes and full source attribution |
+| **Memo** | 3,000-word SCQA investment memo with 8+ sidenotes, full source attribution, and PDF export |
 | **Deck** | 14-slide institutional presentation with keyboard navigation |
-| **Model** | Interactive model with Bull/Base/Street/Bear presets, sensitivity tables, keyboard shortcuts |
+| **Model** | Interactive model with Bull/Base/Street/Bear presets, sensitivity tables, keyboard shortcuts, probability-weighted expected value, and URL-encoded scenario sharing |
 | **Consensus** | Street ratings, peer comp, forward estimates, management quotes, LCS variant view |
+| **Questions** | 20 hand-crafted diligence probes for management meetings — with rationale and red-flag-answer markers for each |
 
 The plugin is **sector-aware** — it detects the business model and applies the right analytical framework:
 

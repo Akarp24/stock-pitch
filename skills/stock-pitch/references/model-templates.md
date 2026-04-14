@@ -343,6 +343,87 @@ const template = \`hello \${name}\`;
 </html>`;
 ```
 
+## Probability-Weighted Expected Value Panel (v1.1)
+
+After the core model panels, add a probability-weighted expected value panel. The panel has:
+
+1. **4 probability sliders** — Bull / Base / Street / Bear, each 0-60% range
+2. **Sum indicator** — shows "Sum: 100%" in green when correct, red otherwise
+3. **Scenario outcomes table** — for each scenario: probability, forward EPS, fair value, return, weighted PT contribution
+4. **Expected value row** — Σ(probability × fair value), highlighted as total
+
+The panel recomputes by temporarily applying each preset to compute its fair value, then restoring the user's current state. Key function:
+
+```js
+function computeScenarioPt(presetName){
+  const p = PRESETS[presetName];
+  const savedState = {...getState()};
+  Object.keys(p).forEach(k=>{document.getElementById(k).value = p[k]});
+  const s = getState();
+  const m = computeModel(s);
+  const pt = m.outputs.forwardEps * (s.pe/10);
+  // Restore user state
+  Object.keys(savedState).forEach(k=>{
+    const el = document.getElementById(k);
+    if(el) el.value = savedState[k];
+  });
+  return {pt, eps: m.outputs.forwardEps};
+}
+```
+
+Wire the probability sliders to call `updateProbPanel()` (not the main `update()`) to avoid recomputing the full model on every probability change.
+
+## URL-Encoded Scenario Sharing (v1.1)
+
+Add a "Share This Scenario" button below the keyboard hint. Encode all slider state (including probability weights) as base64 JSON in the URL hash. On page load, check `location.hash` and apply if present.
+
+```js
+function stateToHash(){
+  const s = getState();
+  const probs = {
+    pB:+document.getElementById('probBull').value,
+    pBa:+document.getElementById('probBase').value,
+    pS:+document.getElementById('probStreet').value,
+    pBe:+document.getElementById('probBear').value,
+  };
+  return btoa(JSON.stringify({...s, ...probs}));
+}
+
+function hashToState(hash){
+  try {
+    const obj = JSON.parse(atob(hash));
+    SLIDER_IDS.forEach(k=>{
+      if(obj[k]!==undefined) document.getElementById(k).value = obj[k];
+    });
+    // Probability sliders
+    if(obj.pB!==undefined) document.getElementById('probBull').value = obj.pB;
+    // ... etc
+  } catch(e){console.warn('Invalid shared state hash')}
+}
+
+function shareScenario(){
+  const hash = stateToHash();
+  const url = location.origin + location.pathname + '#' + hash;
+  navigator.clipboard.writeText(url).then(()=>{
+    // Show toast
+  }).catch(()=>{prompt('Copy URL:', url)});
+}
+
+// On load
+if(location.hash.length > 1){
+  hashToState(location.hash.slice(1));
+  document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+}
+```
+
+**Toast confirmation:**
+
+```html
+<span id="shareToast" style="display:none;font-size:11px;color:var(--green);font-weight:600">
+  &check; Link copied to clipboard
+</span>
+```
+
 ## Testing Checklist
 
 After building a model, verify:

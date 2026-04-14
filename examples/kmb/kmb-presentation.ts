@@ -94,6 +94,7 @@ table.slide-tbl tr.syn td{color:var(--green)}
     <a href="/lcs/kmb/presentation.html" class="active">Deck</a>
     <a href="/lcs/kmb/model.html">Model</a>
     <a href="/lcs/kmb/consensus.html">Consensus</a>
+    <a href="/lcs/kmb/questions.html">Questions</a>
   </div>
   <span class="slide-counter" id="counter">01 / 14</span>
 </div>

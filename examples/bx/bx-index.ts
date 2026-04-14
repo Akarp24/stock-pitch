@@ -151,6 +151,7 @@ html.dark footer{border-top-color:var(--border)}
     <a href="/lcs/bx/presentation.html">Deck</a>
     <a href="/lcs/bx/model.html">Model</a>
     <a href="/lcs/bx/consensus.html">Consensus</a>
+    <a href="/lcs/bx/questions.html">Questions</a>
   </div>
   <div class="nav-right">
     <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode" title="Toggle dark mode">&#9790;</button>

@@ -80,6 +80,7 @@ html.dark footer{border-top-color:var(--border)}
     <a href="/lcs/bx/presentation.html">Deck</a>
     <a href="/lcs/bx/model.html">Model</a>
     <a href="/lcs/bx/consensus.html">Consensus</a>
+    <a href="/lcs/bx/questions.html">Questions</a>
   </div>
   <div class="nav-right">
     <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode">&#9790;</button>
@@ -93,6 +94,7 @@ html.dark footer{border-top-color:var(--border)}
   <div class="eyebrow">Investment Memo &middot; Alternative Asset Management &middot; Compounder Setup</div>
   <h1>Blackstone: Underwriting the Perpetual-Capital Compounder at a Cyclical Discount</h1>
   <div class="meta"><span><strong>Ticker:</strong> NYSE:BX</span><span><strong>Price:</strong> $110</span><span><strong>Rating:</strong> BUY</span><span><strong>LCS PT:</strong> $150 (+36%)</span><span><strong>Horizon:</strong> 24 months</span><span><strong>Analyst:</strong> LCS Equity Research</span></div>
+  <div style="margin-top:18px"><button onclick="window.print()" style="padding:8px 18px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:var(--navy);color:#fff;border:none;cursor:pointer;font-family:Inter,sans-serif">&#128424; Export PDF</button></div>
   <div class="rating-strip">
     <div class="rs"><div class="lbl">Total AUM</div><div class="val">$1.28T</div></div>
     <div class="rs"><div class="lbl">FY25 FRE</div><div class="val gold">$5.7B</div></div>

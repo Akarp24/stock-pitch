@@ -111,6 +111,7 @@ html.dark footer{border-top-color:var(--border)}
     <a href="/lcs/bx/presentation.html">Deck</a>
     <a href="/lcs/bx/model.html" class="active">Model</a>
     <a href="/lcs/bx/consensus.html">Consensus</a>
+    <a href="/lcs/bx/questions.html">Questions</a>
   </div>
   <div class="nav-right">
     <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode">&#9790;</button>
@@ -124,6 +125,11 @@ html.dark footer{border-top-color:var(--border)}
     <h1>Blackstone Interactive Model</h1>
     <p>AUM / FRE / DE algorithm &middot; inflow &amp; margin sliders &middot; realization cycle &middot; FY2026E&ndash;FY2028E</p>
     <p class="kbd-hint">Presets: <kbd>1</kbd> Bull <kbd>2</kbd> Base <kbd>3</kbd> Street <kbd>4</kbd> Bear <kbd>R</kbd> Reset &middot; Hover slider labels for rationale</p>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="shareScenario()" style="padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:var(--gold);color:#fff;border:none;cursor:pointer;font-family:Inter,sans-serif">&#128279; Share This Scenario</button>
+      <button onclick="window.print()" style="padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;font-family:Inter,sans-serif">&#128424; Export PDF</button>
+      <span id="shareToast" style="display:none;font-size:11px;color:var(--green);align-self:center;font-weight:600">&check; Link copied to clipboard</span>
+    </div>
   </div>
 </section>
 
@@ -269,6 +275,48 @@ html.dark footer{border-top-color:var(--border)}
         <tbody id="dcfBody"></tbody>
       </table>
       <p class="caption">Free cash flow = DE (asset managers pass through with de minimis capex). Discount at WACC; terminal at perpetuity growth applied to FY30E DE.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><h2>Probability-Weighted Expected Value</h2><span class="sub">Scenario blend across Bull / Base / Street / Bear</span></div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+        <div style="background:var(--surface);border-radius:8px;padding:12px">
+          <label style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);font-weight:700">Bull Probability</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <input type="range" id="probBull" min="0" max="60" value="20" step="5" style="flex:1">
+            <span id="probBullVal" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--green);min-width:36px;text-align:right">20%</span>
+          </div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:12px">
+          <label style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);font-weight:700">Base Probability</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <input type="range" id="probBase" min="0" max="80" value="45" step="5" style="flex:1">
+            <span id="probBaseVal" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--gold);min-width:36px;text-align:right">45%</span>
+          </div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:12px">
+          <label style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--steel);font-weight:700">Street Probability</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <input type="range" id="probStreet" min="0" max="60" value="20" step="5" style="flex:1">
+            <span id="probStreetVal" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--steel);min-width:36px;text-align:right">20%</span>
+          </div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:12px">
+          <label style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--red);font-weight:700">Bear Probability</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <input type="range" id="probBear" min="0" max="60" value="15" step="5" style="flex:1">
+            <span id="probBearVal" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--red);min-width:36px;text-align:right">15%</span>
+          </div>
+        </div>
+      </div>
+      <p id="probSum" style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Sum: 100%</p>
+      <table class="grid" aria-label="Probability-weighted outcomes">
+        <thead><tr><th>Scenario</th><th>Prob.</th><th>FY27E DE/Sh</th><th>Fair Value</th><th>Return</th><th>Weighted PT Contribution</th></tr></thead>
+        <tbody id="probBody"></tbody>
+      </table>
+      <p class="caption">Expected value = &Sigma; (Probability &times; Fair Value). Each scenario uses its corresponding preset assumption set. Adjust probabilities to reflect your conviction distribution.</p>
     </div>
   </div>
 
@@ -586,6 +634,104 @@ function update(){
     update();
   });
 });
+// Wire probability sliders
+['probBull','probBase','probStreet','probBear'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',updateProbPanel);
+});
+
+// Probability-weighted expected value panel
+function computeScenarioPt(presetName){
+  const p = PRESETS[presetName];
+  const savedState = {...getState()};
+  // Temporarily apply preset to compute
+  Object.keys(p).forEach(k=>{document.getElementById(k).value = p[k]});
+  const s = getState();
+  const m = computeModel(s);
+  const pt = m.model[27].deSh * (s.pe/10);
+  const deSh = m.model[27].deSh;
+  // Restore
+  Object.keys(savedState).forEach(k=>{
+    const el = document.getElementById(k);
+    if(el) el.value = savedState[k];
+  });
+  return {pt, deSh};
+}
+
+function updateProbPanel(){
+  const pBull = +document.getElementById('probBull').value;
+  const pBase = +document.getElementById('probBase').value;
+  const pStreet = +document.getElementById('probStreet').value;
+  const pBear = +document.getElementById('probBear').value;
+  document.getElementById('probBullVal').textContent = pBull+'%';
+  document.getElementById('probBaseVal').textContent = pBase+'%';
+  document.getElementById('probStreetVal').textContent = pStreet+'%';
+  document.getElementById('probBearVal').textContent = pBear+'%';
+  const sum = pBull+pBase+pStreet+pBear;
+  document.getElementById('probSum').innerHTML = 'Sum: <strong style="color:'+(sum===100?'var(--green)':'var(--red)')+'">'+sum+'%</strong>'+(sum===100?'':' &mdash; adjust to total 100%');
+
+  const scenarios = [
+    {name:'Bull', preset:'bull', prob:pBull, color:'var(--green)'},
+    {name:'Base', preset:'base', prob:pBase, color:'var(--gold)'},
+    {name:'Street', preset:'street', prob:pStreet, color:'var(--steel)'},
+    {name:'Bear', preset:'bear', prob:pBear, color:'var(--red)'},
+  ];
+  let html = '';
+  let ev = 0;
+  scenarios.forEach(sc=>{
+    const {pt, deSh} = computeScenarioPt(sc.preset);
+    const ret = (pt-PRICE)/PRICE;
+    const contribution = pt * (sc.prob/100);
+    ev += contribution;
+    html += '<tr><td style="color:'+sc.color+';font-weight:700">'+sc.name+'</td>';
+    html += '<td>'+sc.prob+'%</td>';
+    html += '<td>$'+deSh.toFixed(2)+'</td>';
+    html += '<td>$'+Math.round(pt)+'</td>';
+    html += '<td style="color:'+(ret>=0?'var(--green)':'var(--red)')+'">'+(ret>=0?'+':'')+(ret*100).toFixed(0)+'%</td>';
+    html += '<td>$'+Math.round(contribution)+'</td></tr>';
+  });
+  html += '<tr class="total"><td>Expected Value</td><td>'+sum+'%</td><td>&mdash;</td><td>&mdash;</td>';
+  const evRet = (ev-PRICE)/PRICE;
+  html += '<td style="color:'+(evRet>=0?'var(--green)':'var(--red)')+'">'+(evRet>=0?'+':'')+(evRet*100).toFixed(0)+'%</td>';
+  html += '<td>$'+Math.round(ev)+'</td></tr>';
+  document.getElementById('probBody').innerHTML = html;
+}
+
+// URL state sharing
+function stateToHash(){
+  const s = getState();
+  const probs = {
+    pB:+document.getElementById('probBull').value,
+    pBa:+document.getElementById('probBase').value,
+    pS:+document.getElementById('probStreet').value,
+    pBe:+document.getElementById('probBear').value,
+  };
+  return btoa(JSON.stringify({...s, ...probs}));
+}
+function hashToState(hash){
+  try {
+    const obj = JSON.parse(atob(hash));
+    ['reGrow','peGrow','creditGrow','maGrow','feeRate','freMargin','frePerfGrow','real','realGrow','pe','payout','wacc','tg'].forEach(k=>{
+      if(obj[k]!==undefined) document.getElementById(k).value = obj[k];
+    });
+    if(obj.pB!==undefined) document.getElementById('probBull').value = obj.pB;
+    if(obj.pBa!==undefined) document.getElementById('probBase').value = obj.pBa;
+    if(obj.pS!==undefined) document.getElementById('probStreet').value = obj.pS;
+    if(obj.pBe!==undefined) document.getElementById('probBear').value = obj.pBe;
+  } catch(e){console.warn('Invalid shared state hash')}
+}
+function shareScenario(){
+  const hash = stateToHash();
+  const url = location.origin + location.pathname + '#' + hash;
+  navigator.clipboard.writeText(url).then(()=>{
+    const t = document.getElementById('shareToast');
+    t.style.display = 'inline';
+    setTimeout(()=>{t.style.display='none'}, 2500);
+  }).catch(()=>{prompt('Copy shareable URL:', url)});
+}
+if(location.hash.length > 1){
+  hashToState(location.hash.slice(1));
+  document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+}
 
 document.addEventListener('keydown',(e)=>{
   if(e.target.tagName==='INPUT') return;
@@ -605,6 +751,7 @@ function toggleDark(){
 try{if(localStorage.getItem('lcs-dark')==='1'){document.documentElement.classList.add('dark');const b=document.querySelector('.dark-toggle');if(b)b.innerHTML='&#9788;'}}catch(e){}
 
 update();
+updateProbPanel();
 <\/script>
 </body>
 </html>`;

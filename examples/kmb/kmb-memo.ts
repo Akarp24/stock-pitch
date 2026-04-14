@@ -88,6 +88,7 @@ html.dark footer{border-top-color:var(--border)}
     <a href="/lcs/kmb/presentation.html">Deck</a>
     <a href="/lcs/kmb/model.html">Model</a>
     <a href="/lcs/kmb/consensus.html">Consensus</a>
+    <a href="/lcs/kmb/questions.html">Questions</a>
   </div>
   <div class="nav-right">
     <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode">&#9790;</button>
@@ -101,6 +102,7 @@ html.dark footer{border-top-color:var(--border)}
   <div class="eyebrow">Investment Memo &middot; Consumer Staples &middot; Transformative M&amp;A</div>
   <h1>Kimberly-Clark / Kenvue: Underwriting the $48.7 Billion Consumer Health Pivot</h1>
   <div class="meta"><span><strong>Ticker:</strong> NYSE:KMB</span><span><strong>Price:</strong> $96.59</span><span><strong>Rating:</strong> BUY</span><span><strong>LCS PT:</strong> $128 (+33%)</span><span><strong>Time Horizon:</strong> 24 months</span><span><strong>Analyst:</strong> LCS Equity Research</span></div>
+  <div style="margin-top:18px"><button onclick="window.print()" style="padding:8px 18px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:var(--navy);color:#fff;border:none;cursor:pointer;font-family:Inter,sans-serif">&#128424; Export PDF</button></div>
   <div class="rating-strip">
     <div class="rs"><div class="lbl">Deal EV</div><div class="val gold">$48.7B</div></div>
     <div class="rs"><div class="lbl">Net Synergies</div><div class="val green">$2.1B</div></div>

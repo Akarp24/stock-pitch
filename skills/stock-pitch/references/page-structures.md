@@ -223,6 +223,79 @@ function update() {
 [Footer]
 ```
 
+## Page 6: Questions for Management
+
+```
+[Nav]
+[Hero]
+  - Eyebrow: "Diligence Toolkit · Management Questions"
+  - H1: "20 Questions for {Company} Management"
+  - Subtitle explaining purpose
+  - Action buttons: Expand All / Collapse All / Export PDF
+[Intro Box — surface with gold left border]
+  - How to use this page
+  - Emphasis on priority-flagged must-asks
+[Category Sections — 4-5 categories]
+  Each category:
+    - Colored bar indicator (forest/steel/gold/red/navy)
+    - Category title + question count
+    - 3-5 question cards
+  Question card structure:
+    - Number (01-20)
+    - Question text (bold, 15px)
+    - Priority tag (High / Medium / Standard)
+    - Click-to-expand detail:
+      - Why We're Asking (rationale tied to thesis)
+      - Red-Flag Answer (what a non-answer sounds like)
+[Footer]
+```
+
+### Category Presets by Sector
+
+**Generic / Default:**
+1. Strategy (4 questions)
+2. Capital Allocation (4 questions)
+3. Competitive Dynamics (4 questions)
+4. Risk & Downside (5 questions)
+5. Variant Perception (3 questions)
+
+**M&A / Merger:**
+1. Deal Execution & Close (4 questions)
+2. Synergy Capture (5 questions)
+3. Litigation / Regulatory (3 questions — Tylenol / antitrust / FDA / etc.)
+4. Strategy & Portfolio (5 questions)
+5. Variant Perception (3 questions)
+
+**Alt Asset Manager:**
+1. Strategy & Platform (4 questions)
+2. Capital Allocation (4 questions)
+3. Competitive Dynamics (4 questions)
+4. Risk & Downside Scenarios (5 questions)
+5. Variant Perception (3 questions)
+
+**Trucking / Transport:**
+1. Cycle Positioning (4 questions)
+2. Capital Allocation / Fleet (4 questions)
+3. Competitive (LTL vs TL)
+4. Fuel / Rate / Labor Risk (4 questions)
+5. Variant Perception (3 questions)
+
+### Priority Tagging
+
+- **High Priority (red)** — must-ask if you have only 3-5 questions in a meeting. These are the ones where a non-answer meaningfully changes the thesis.
+- **Medium (gold)** — important for fuller conversations or follow-ups.
+- **Standard (steel)** — nice-to-have color; typical sell-side quality.
+
+### Interaction Pattern
+
+```js
+function toggleQ(el){el.parentElement.classList.toggle('expanded')}
+function expandAll(){document.querySelectorAll('.question').forEach(q=>q.classList.add('expanded'))}
+function collapseAll(){document.querySelectorAll('.question').forEach(q=>q.classList.remove('expanded'))}
+```
+
+On print: all `.q-detail` are forced `display:block` so a physical printout brings all rationale with it.
+
 ## Footer (All Pages)
 
 ```html
