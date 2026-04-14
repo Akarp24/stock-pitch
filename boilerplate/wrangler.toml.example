@@ -1,0 +1,34 @@
+# Copy to wrangler.toml and customize for your account
+#
+# To deploy:
+#   1. Run `npx wrangler login` (or set CLOUDFLARE_API_TOKEN env var)
+#   2. Customize this file
+#   3. Run `npx wrangler deploy`
+
+name = "stock-research-portal"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+
+# Option A: Deploy to workers.dev subdomain (default)
+# The worker will be accessible at:
+#   stock-research-portal.YOUR_SUBDOMAIN.workers.dev
+
+# Option B: Custom domain zone routes (uncomment and customize)
+# routes = [
+#   { pattern = "yourdomain.com/research", zone_name = "yourdomain.com" },
+#   { pattern = "yourdomain.com/research/*", zone_name = "yourdomain.com" },
+# ]
+
+# Optional: bindings for live data integration
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "your-research-db"
+# database_id = "your-database-id"
+#
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+
+[vars]
+ENVIRONMENT = "production"
