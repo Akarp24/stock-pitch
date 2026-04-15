@@ -46,8 +46,8 @@ Every data point must carry one of these source tags:
 | `[10-Q]` | SEC quarterly filing | Quarterly revenue, recent guidance |
 | `[Transcript]` | Earnings call transcript | Management quotes, guidance color |
 | `[IR]` | Investor relations page | Shareholder letter, press release |
-| `[Market]` | Live market data via web search | Price, market cap, shares outstanding |
-| `[Consensus]` | Aggregated analyst estimates | Mean EPS, revenue estimates |
+| `[Bloomberg]` | Bloomberg Terminal / blpapi | Price, market cap, consensus estimates, peer multiples |
+| `[Consensus]` | Bloomberg consensus (BEST_ fields) | Mean EPS, revenue estimates, price targets |
 | `[Sell-Side]` | Named analyst report (if provided) | Barclays PT $300 |
 | `[Computed]` | Derived from sourced inputs | EV/EBITDA = (mkt cap + debt − cash) / EBITDA |
 | `[Estimated]` | AI estimate with methodology shown | "Based on 3-year CAGR of segment" |
@@ -184,16 +184,124 @@ Extract:
 - Strategic priorities and initiatives
 - Capital allocation framework
 
-#### 1C. Live Market Data
+#### 1C. Live Market Data & Consensus — Bloomberg API (blpapi)
 
-WebSearch for current:
-- Stock price, market cap, shares outstanding
-- 52-week range, average daily volume
-- Dividend yield (if applicable)
-- Consensus analyst estimates (EPS, revenue for next 2-3 years)
-- Analyst ratings distribution (buy/hold/sell count)
-- Mean and median price targets
-- Recent analyst upgrades/downgrades
+**Bloomberg is the primary source for price data and consensus estimates. Web search is not used for these.**
+
+**Step 0 — Verify blpapi installation:**
+```bash
+python -m pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/ blpapi
+```
+
+**Step 1 — Pull live market data (ReferenceDataRequest / BDP equivalent):**
+
+```python
+import blpapi
+
+TICKER = "MS US Equity"  # Bloomberg security identifier
+
+MARKET_FIELDS = [
+    "PX_LAST",           # Current price
+    "CUR_MKT_CAP",       # Market cap ($MM)
+    "EQY_SH_OUT",        # Shares outstanding (MM)
+    "PX_52WK_HI",        # 52-week high
+    "PX_52WK_LO",        # 52-week low
+    "VOLUME_AVG_20D",    # 20-day avg daily volume
+    "EQY_DVD_YLD_IND",   # Indicated dividend yield (%)
+    "DVD_SH_LAST",       # Last dividend per share (annualized)
+    "BETA_ADJUSTED",     # Adjusted beta
+    "P_BOOK_RATIO",      # Price-to-book
+    "PE_RATIO",          # Trailing P/E
+    "EV_TO_T12M_EBITDA", # LTM EV/EBITDA
+]
+
+options = blpapi.SessionOptions()
+options.setServerHost("localhost")
+options.setServerPort(8194)
+session = blpapi.Session(options)
+session.start()
+session.openService("//blp/refdata")
+service = session.getService("//blp/refdata")
+
+request = service.createRequest("ReferenceDataRequest")
+request.getElement("securities").appendValue(TICKER)
+for f in MARKET_FIELDS:
+    request.getElement("fields").appendValue(f)
+session.sendRequest(request)
+
+# Event loop — process PARTIAL_RESPONSE and RESPONSE
+while True:
+    event = session.nextEvent(5000)
+    for msg in event:
+        if event.eventType() in (blpapi.Event.PARTIAL_RESPONSE, blpapi.Event.RESPONSE):
+            sec = msg.getElement("securityData").getValue(0)
+            fd = sec.getElement("fieldData")
+            # Read each field: fd.getElementAsFloat("PX_LAST"), etc.
+    if event.eventType() == blpapi.Event.RESPONSE:
+        break
+```
+
+**Step 2 — Pull consensus estimates (ReferenceDataRequest with period overrides):**
+
+```python
+CONSENSUS_FIELDS = [
+    "BEST_EPS",            # Consensus EPS estimate
+    "BEST_SALES",          # Consensus revenue estimate ($MM)
+    "BEST_EBITDA",         # Consensus EBITDA
+    "BEST_PE_RATIO",       # Forward P/E
+    "BEST_ROE",            # Forward ROE
+    "BEST_TARGET_PRICE",   # Mean analyst price target
+    "BEST_TARGET_PRICE_HIGH",  # High price target
+    "BEST_TARGET_PRICE_LOW",   # Low price target
+    "TOT_ANALYST_REC",         # Total analyst count
+    "ANALYST_RATING_BUY",      # Buy count
+    "ANALYST_RATING_HOLD",     # Hold count
+    "ANALYST_RATING_SELL",     # Sell count
+    "BEST_ANALYST_RATING",     # Consensus rating (1=Strong Buy … 5=Strong Sell)
+]
+
+# Pull for current FY, next FY, and FY+2 using period overrides
+for period in ["0FY", "1FY", "2FY"]:
+    request = service.createRequest("ReferenceDataRequest")
+    request.getElement("securities").appendValue(TICKER)
+    for f in CONSENSUS_FIELDS:
+        request.getElement("fields").appendValue(f)
+    ovr = request.getElement("overrides").appendElement()
+    ovr.setElement("fieldId", "BEST_FPERIOD_OVERRIDE")
+    ovr.setElement("value", period)  # 0FY=current, 1FY=next, 2FY=year after
+    session.sendRequest(request)
+    # ... process event loop
+```
+
+**Step 3 — Pull historical price series (HistoricalDataRequest / BDH equivalent):**
+
+```python
+request = service.createRequest("HistoricalDataRequest")
+request.getElement("securities").appendValue(TICKER)
+request.getElement("fields").appendValue("PX_LAST")
+request.getElement("fields").appendValue("VOLUME")
+request.set("startDate", "20230101")   # 3 years back
+request.set("endDate",   "99991231")   # Today
+request.set("periodicitySelection", "MONTHLY")  # Monthly for chart data
+request.set("adjustmentSplit", True)
+request.set("adjustmentNormal", True)
+session.sendRequest(request)
+```
+
+**Step 4 — Pull peer valuation multiples (same ReferenceDataRequest, list of tickers):**
+
+```python
+PEER_TICKERS = ["GS US Equity", "JPM US Equity", "BAC US Equity",
+                "C US Equity", "UBS US Equity"]
+PEER_FIELDS = [
+    "PX_LAST", "CUR_MKT_CAP", "BEST_PE_RATIO", "P_BOOK_RATIO",
+    "BEST_ROE", "EV_TO_T12M_EBITDA", "BEST_SALES_GROWTH",
+    "BEST_EPS", "BEST_TARGET_PRICE",
+]
+# Same ReferenceDataRequest pattern — append all tickers, all fields
+```
+
+Collect: current price, market cap, shares, 52-week range, volume, dividend yield, beta, trailing/forward multiples, consensus EPS/revenue for 3 forward years, analyst rating distribution, mean/high/low price targets, and peer multiples.
 
 #### 1D. Sell-Side Research (If PDFs Provided)
 
@@ -236,11 +344,7 @@ The skill will:
 - Memo → valuation section peer benchmarks
 - Presentation → valuation slide peer data
 
-If `/comps` is unavailable, use WebSearch to manually gather:
-- 5 closest public peers by business model and revenue scale
-- NTM EV/EBITDA, NTM P/E, NTM EV/Revenue for each
-- Revenue growth rate and key margin for each
-- Calculate peer average and target company's discount/premium
+If `/comps` is unavailable, use the Bloomberg peer data already collected in Phase 1C Step 4 — `BEST_PE_RATIO`, `P_BOOK_RATIO`, `EV_TO_T12M_EBITDA`, `BEST_ROE`, `BEST_SALES_GROWTH` for each peer. Calculate peer median and target company's discount/premium from those figures. Do not use WebSearch for peer multiples.
 
 #### 2C. DCF — Chain `/dcf`
 
