@@ -95,7 +95,7 @@ Every figure must cite: direct EDGAR URL, filing type, period, section reference
 
 **Required header on every EDGAR request:**
 ```
-User-Agent: Levin Capital Strategies research@levincap.com
+User-Agent: LCS Research research@levincap.com
 ```
 Rate limit: ≥0.15s between requests.
 
@@ -138,7 +138,7 @@ WebFetch the filing index to identify the primary 10-K HTML document filename.
 For large 10-K HTML files, use the bash curl pipeline to avoid loading the full document into context:
 
 ```bash
-curl -s -H "User-Agent: Levin Capital Strategies research@levincap.com" \
+curl -s -H "User-Agent: LCS Research research@levincap.com" \
   "https://www.sec.gov/Archives/edgar/data/{CIK}/{accession_no_dashes}/{primary_doc}" \
   | awk 'NR>=START,NR<=END' \
   | sed 's/<[^>]*>//g' \
