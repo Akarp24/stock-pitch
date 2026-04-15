@@ -53,10 +53,12 @@ Every data point must carry one of these source tags:
 | `[Estimated]` | AI estimate with methodology shown | "Based on 3-year CAGR of segment" |
 
 **Rules:**
-- Historical financials (revenue, EPS, margins) MUST come from `[10-K]` or `[10-Q]`
+- Historical financials (revenue, EPS, margins) MUST come from `[10-K]` or `[10-Q]` — sourced directly from EDGAR, not secondary websites
+- Most recent quarterly figures should come from the 8-K earnings release filed on EDGAR (Item 2.02 / ex99.1), not web search summaries
 - Forward estimates must be `[Consensus]`, `[Sell-Side]`, or `[Estimated]` with method
 - Quotes MUST be `[Transcript]` or `[IR]` with speaker attribution
 - Never present an AI estimate as a fact — always label it
+- Web search is corroboration-only for historical data — if a web figure contradicts EDGAR, trust EDGAR and note the discrepancy
 
 ## Required Inputs
 
@@ -87,16 +89,79 @@ Gather ALL data before writing any pages. Every item must be sourced.
 
 #### 1A. SEC Filings (Primary Source of Truth)
 
-**WebFetch approach (preferred):**
+**EDGAR-first. Web search is for post-extraction corroboration only — never a primary source.**
+
+Every figure must cite: direct EDGAR URL, filing type, period, section reference, and scope disclosure.
+
+**Required header on every EDGAR request:**
+```
+User-Agent: Levin Capital Strategies research@levincap.com
+```
+Rate limit: ≥0.15s between requests.
+
+---
+
+**Step 1 — Resolve CIK via Submissions API**
 
 ```
-WebFetch https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={TICKER}&type=10-K&dateb=&owner=include&count=1
-→ Extract the filing URL from the results
-WebFetch {filing_url}
-→ Extract financials from the 10-K HTML
+WebFetch https://data.sec.gov/submissions/CIK{10-digit-zero-padded}.json
 ```
 
-**Extract from 10-K:**
+Zero-pad the CIK to 10 digits (e.g., CIK 895421 → `CIK0000895421`). If you don't know the CIK, look it up first:
+
+```
+WebFetch https://efts.sec.gov/LATEST/search-index?q=%22{COMPANY+NAME}%22&dateRange=custom&startdt=2024-01-01&forms=10-K
+```
+
+Or use the company search:
+```
+WebFetch https://www.sec.gov/cgi-bin/browse-edgar?company={TICKER}&CIK=&type=10-K&dateb=&owner=include&count=5&search_text=&action=getcompany
+```
+
+The submissions JSON returns `filings.recent` with arrays of `accessionNumber`, `form`, `filingDate`, `primaryDocument`. Find the most recent `10-K` entry.
+
+---
+
+**Step 2 — Build the filing archive URL**
+
+```
+accession_no_dashes = accessionNumber.replace('-', '')
+filing_index = https://www.sec.gov/Archives/edgar/data/{CIK}/{accession_no_dashes}/{primaryDocument}
+```
+
+WebFetch the filing index to identify the primary 10-K HTML document filename.
+
+---
+
+**Step 3 — Extract financials via bash pipeline**
+
+For large 10-K HTML files, use the bash curl pipeline to avoid loading the full document into context:
+
+```bash
+curl -s -H "User-Agent: Levin Capital Strategies research@levincap.com" \
+  "https://www.sec.gov/Archives/edgar/data/{CIK}/{accession_no_dashes}/{primary_doc}" \
+  | awk 'NR>=START,NR<=END' \
+  | sed 's/<[^>]*>//g' \
+  | grep -v '^[[:space:]]*$'
+```
+
+Use `python3` for JSON parsing and HTML entity decoding. Adjust `NR` window to target the financial statements section (search for "CONSOLIDATED STATEMENTS OF INCOME" or equivalent heading first to locate the line range).
+
+---
+
+**Step 4 — Latest quarterly results (8-K earnings release)**
+
+From the submissions JSON, find the most recent `8-K` filed within 5 days of a quarter-end (typically January, April, July, October). The earnings release is usually the first exhibit (`ex99.1` or similar).
+
+```
+WebFetch https://www.sec.gov/Archives/edgar/data/{CIK}/{accession_no_dashes}/{ex99_filename}
+```
+
+This gives the official earnings press release with the income statement, segment breakdown, and any guidance — use it as the source of truth for the most recent quarter.
+
+---
+
+**Extract from 10-K + most recent 10-Q / 8-K:**
 - Income Statement: Revenue by segment (3yr), operating income by segment, net income, EPS
 - Balance Sheet: Cash & equivalents, total debt, total assets, stockholders' equity, shares outstanding
 - Cash Flow: Operating CF, capex, FCF (OCF − Capex), dividends, buybacks
@@ -105,15 +170,13 @@ WebFetch {filing_url}
 - Equity investments / unconsolidated interests (for SOTP)
 - Management guidance (if in filing)
 
-**Verification:** Cross-check 3 numbers against a web source (MacroTrends, SEC filing summary)
+**Verification:** After EDGAR extraction, cross-check 3 numbers against a web source (company IR press release or business publication) to confirm no transcription errors. Note any discrepancies.
 
 #### 1B. Earnings Transcripts & IR Materials
 
-WebSearch for:
-- Latest earnings call transcript
-- CEO/CFO shareholder letter
-- Most recent investor day presentation
-- Any URLs provided by the user
+**Primary: EDGAR 8-K filings.** Earnings press releases are filed as 8-K (Item 2.02 or 7.01) exhibits — pull from EDGAR first using the same submissions JSON approach as 1A.
+
+For items not in EDGAR (call transcripts, shareholder letters, investor day decks), use WebSearch as a fallback — but label all quotes with speaker name, date, and source URL.
 
 Extract:
 - Management guidance (revenue, margins, capex)
